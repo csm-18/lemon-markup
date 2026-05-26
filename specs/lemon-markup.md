@@ -1,466 +1,196 @@
-# Lemon Markup Specification v0.1
+# Lemon Markup Specification v0.2.0
 
 ## Overview
 
-Lemon Markup is a static HTML extension language.
+Lemon Markup is a strict, compile-time-only static HTML extension language.
 
 ### Goals
 
-- Reusable custom elements
-- HTML-first syntax
-- Compile-time only
-- Zero runtime
-- Outputs plain HTML
-- Simple parsing and compilation
+* Reusable custom elements.
+* HTML-first syntax.
+* Compile-time only with zero client-runtime overhead.
+* Outputs plain, predictable HTML.
+* Fast, single-pass global parsing and compilation.
 
 ### Not Included
 
-Lemon Markup intentionally omits:
+Lemon Markup intentionally omits reactivity, state management, client-side JavaScript execution, routing, scoped CSS, and hydration. It is strictly a static compiler for building structural, reusable HTML components.
 
-- Reactivity
-- State management
-- JavaScript execution
-- Routing
-- Scoped CSS
-- Hydration / client runtime
+## File Extension & Output Rules
 
-It is a static compiler for reusable HTML structures.
+* The file extension for Lemon Markup is `.lm`.
+* Any `.lm` file containing a DOCTYPE (`<!DOCTYPE html>`) is treated as a target entry point and compiles into an individual HTML file (e.g., `index.lm` $\rightarrow$ `index.html`).
+* Files without a DOCTYPE are treated as template/partial files and do not emit standalone HTML output files.
 
-## File Extension
+---
 
-`.lm`
+## Core Syntax
 
-Examples:
+### Component & Native Tag Distinction
 
-```
-index.lm
-about.lm
-components.lm
-```
-
-## Output Rules
-
-Any `.lm` file containing a DOCTYPE (`<!DOCTYPE html>`) is compiled into an HTML file.
-
-Example:
-
-```
-index.lm → index.html
-```
-
-Files without a doctype are treated as partial/template files and are not emitted as HTML output.
-
-## Basic Syntax
-
-Normal HTML is valid Lemon Markup syntax.
-
-Example:
-
+* Tags beginning with an uppercase letter are treated as **Custom Components**:
 ```html
-<div>
-    <h1>Hello</h1>
-</div>
+<Card></Card>
+
 ```
 
-### Custom Elements
 
-Tags beginning with an uppercase letter are treated as custom elements (templates):
-
+* Tags beginning with a lowercase letter are treated as **Native HTML Elements**:
 ```html
-<Card />
-<Button />
-<Layout />
+<div></div>
+
 ```
 
-Tags beginning with lowercase letters are treated as native HTML elements:
 
-```html
-<div>
-<section>
-<button>
-```
 
-## Template Declaration
+### No Self-Closing Tags
 
-Templates are declared using the `<template>` tag with a `name` attribute:
-
-```html
-<template name="Card">
-    ...
-</template>
-```
-
-Templates may appear anywhere inside a `.lm` file.
-
-### Template Rules
-
-#### Templates Cannot Be Nested
-
-Valid:
-
-```html
-<template name="Card">
-    <div></div>
-</template>
-
-<section>
-    <Card />
-</section>
-```
-
-Invalid (compiler error):
-
-```html
-<template name="Layout">
-    <template name="Card">
-    </template>
-</template>
-```
-
-Compiler error: Nested templates are not allowed.
-
-#### Template Names
-
-Template names:
-
-- Must begin with uppercase letters
-- Are case-sensitive
-- Must be unique
-
-Valid examples: `Card`, `Button`, `MainLayout`
-
-Invalid examples: `card`, `button`
-
-#### Reserved Names
-
-The names `template`, `children`, and `attrs` are reserved and cannot be used as template names.
-
-## Template Usage
-
-Templates are used like normal HTML elements:
-
-```html
-<Card />
-
-<!-- or -->
-<Card>
-    <h1>Hello</h1>
-</Card>
-```
-
-## Props
-
-Attributes beginning with uppercase letters are treated as component props:
-
-```html
-<Button Text="Login" />
-```
-
-`Text` is a prop in the example above.
-
-### Native HTML Attributes
-
-Attributes beginning with lowercase letters are treated as native HTML attributes:
-
-```html
-<div class="box"></div>
-```
-
-### Mixed Attributes
-
-```html
-<Card class="main" Title="Welcome">
-</Card>
-```
-
-Rules:
-
-- `class` → native HTML attribute
-- `Title` → component prop
-
-## Variable Interpolation
-
-Variables use double braces:
-
-```text
-{{ Title }}
-```
-
-Allowed sources for interpolation:
-
-- Component props
-- `children`
-- `attrs`
-
-Not allowed:
-
-- Expressions
-- JavaScript or function calls
-
-Invalid examples:
-
-```text
-{{ x + y }}
-{{ alert() }}
-```
-
-Compiler error: Expressions are not supported.
-
-## Children Injection
-
-Special variable `{{ children }}` represents nested child content.
-
-Template example:
-
-```html
-<template name="Card">
-    <div class="card">
-        {{ children }}
-    </div>
-</template>
-```
-
-Usage:
-
-```html
-<Card>
-    <p>Hello</p>
-</Card>
-```
-
-Output:
-
-```html
-<div class="card">
-    <p>Hello</p>
-</div>
-```
-
-## Attribute Forwarding
-
-Special variable `{{ attrs }}` contains all lowercase HTML attributes passed to the component. Uppercase prop attributes are excluded.
-
-Template example:
-
-```html
-<template name="Card">
-    <div {{ attrs }}>
-        {{ children }}
-    </div>
-</template>
-```
-
-Usage:
-
-```html
-<Card class="box" id="main">
-    Hello
-</Card>
-```
-
-Output:
-
-```html
-<div class="box" id="main">
-    Hello
-</div>
-```
-
-## Self-Closing Components
-
-Supported:
-
-```html
-<Button />
-```
-
-Equivalent to:
+Every element—whether a native HTML element or a custom component—**must have a matching explicit closing tag**. Self-closing shorthand expressions (e.g., `<Button />` or `<div />`) are invalid syntax and will throw a compiler error.
 
 ```html
 <Button></Button>
-```
+<div class="box"></div>
 
-## Template Resolution
-
-All templates are globally available during compilation. The compiler scans all `.lm` files and registers templates before compilation.
-
-Example layout:
+<Button />
+<div />
 
 ```
-src/
- ├── index.lm
- ├── ui/
- │    └── components.lm
-```
 
-## Compilation Process
+---
 
-Compilation steps:
+## Template Declarations
 
-1. Scan all `.lm` files
-2. Register templates
-3. Parse documents
-4. Detect custom elements
-5. Expand templates
-6. Inject props
-7. Inject children
-8. Forward `attrs`
-9. Generate HTML
-
-## Component Expansion
-
-When the compiler encounters:
-
-```html
-<Card Title="Hello">
-    <p>World</p>
-</Card>
-```
-
-The compiler:
-
-- Finds template `Card`
-- Clones template content
-- Injects props
-- Injects children
-- Recursively expands nested components
-
-### Recursive Expansion
-
-Templates may use other templates. The compiler expands recursively until only native HTML remains.
-
-Example:
-
-```html
-<template name="Page">
-    <Layout>
-        <Card>
-            {{ children }}
-        </Card>
-    </Layout>
-</template>
-```
-
-### Circular References
-
-Circular template references are disallowed.
-
-Invalid example:
-
-```html
-<template name="A">
-    <B />
-</template>
-
-<template name="B">
-    <A />
-</template>
-```
-
-Compiler error: Circular template reference detected.
-
-### Unknown Templates
-
-Using an undefined template causes a compiler error. Example:
-
-```html
-<Card />
-```
-
-If `Card` is not defined: `Unknown template: Card`.
-
-## HTML Preservation
-
-Native HTML is preserved exactly unless modified through template expansion.
-
-Example input:
+Templates are defined using the `<template>` tag with a unique `name` attribute. They can appear anywhere inside an `.lm` file, and a single `.lm` file can host multiple template declarations.
 
 ```html
 <template name="Card">
-    <div class="card" {{ attrs }}>
-        {{ children }}
+    <div class="card-layout">
+        <h2>{{ Title }}</h2>
     </div>
 </template>
 
-<!DOCTYPE html>
-<html>
-<body>
+<template name="Button">
+    <button class="btn-primary"></button>
+</template>
 
-<Card class="main">
-    <h1>Hello</h1>
-</Card>
-
-</body>
-</html>
 ```
 
-Output:
+### Template Constraints
+
+1. **No Nesting:** Component templates cannot contain other `<template>` declarations inside their body.
+2. **Naming Conventions:** Template names must begin with an uppercase letter, are case-sensitive, and cannot use the reserved names `template`, `children`, or `raw`.
+3. **Strict Global Scope:** All template names must be unique across the entire project compilation context. If two files declare a template with the exact same name, the compiler throws an error.
+
+---
+
+## Props (Variables)
+
+Lemon operates on a **Props-Only Model**. All attributes passed into custom components must start with an uppercase letter. There is no concept of raw HTML attribute forwarding or automatic root element injection.
 
 ```html
-<!DOCTYPE html>
-<html>
-<body>
+<Card Title="Welcome Screen" Theme="dark"></Card>
 
-<div class="card" class="main">
-    <h1>Hello</h1>
-</div>
-
-</body>
-</html>
 ```
 
-## Compiler Errors
+### Variable Interpolation
 
-Common compiler errors include:
+Properties passed into a component are injected via double curly braces containing the exact, case-sensitive prop name:
 
-- Nested templates
-- Unknown templates
-- Duplicate template names
-- Circular references
-- Invalid interpolation
-- Malformed HTML
-- Invalid template names
+```html
+<template name="Card">
+    <div class="card {{ Theme }}">
+        <h1>{{ Title }}</h1>
+    </div>
+</template>
 
-Example error:
+```
+
+*Note: Logical expressions, math operations, and JavaScript execution are strictly forbidden inside variable tags (e.g., `{{ 1 + 2 }}` will throw a compiler error).*
+
+---
+
+## Children Injection
+
+The special variable `{{ children }}` is a reserved keyword representing any nested markup placed between the opening and closing tags of a custom element. The compiler preserves all whitespace, tabs, and newline characters exactly as written when copying children into the template.
+
+```html
+<template name="Layout">
+    <main>{{ children }}</main>
+</template>
+
+<Layout>
+    <div>
+        <p>Hello World</p>
+    </div>
+</Layout>
+
+```
+
+---
+
+## Escaping Compilation (`<raw>`)
+
+To prevent the compiler from evaluating variables or processing custom elements, wrap the content in a `<raw>` block. Everything inside this block is treated as literal, raw text. The `<raw>` tags themselves are stripped out during final generation.
+
+```html
+<raw>
+    <p>In Vue.js, your interpolation looks like this: {{ user.name }}</p>
+    <Sidebar></Sidebar>
+</raw>
+
+```
+
+---
+
+## Strict Compiler Diagnostics
+
+The compiler performs strict validation checks during the expansion phase. Any validation failure completely halts the compilation process and prints an error message containing the exact file, line, and column reference.
+
+### 1. Missing Props (Fatal Error)
+
+If a template expects a variable but that property is missing from the component invocation, it is a fatal error. To intentionally pass an empty value, developers must pass an explicit empty string `""`.
+
+```html
+<Card></Card> 
+
+<Card Title=""></Card>
+
+```
 
 ```text
-Error: Duplicate template name "Card"
- --> components.lm:12:1
-```
-
-### Recommended AST Nodes
-
-- `DocumentNode`
-- `ElementNode`
-- `TemplateNode`
-- `TextNode`
-- `VariableNode`
-- `AttributeNode`
-
-### Recommended Compiler Structure
+Error: Missing required Prop "Title" for template "Card".
+ --> src/index.lm:14:1
 
 ```
-lexer/      # Produces tokens: tags, attributes, text, interpolation blocks
-parser/     # Builds AST
-registry/   # Stores templates
-expander/   # Resolves and expands custom elements
-generator/  # Outputs final HTML
+
+### 2. Unused Props (Fatal Error)
+
+If a developer passes a property that is not declared or utilized inside the component's template body, it is treated as dead code or a typo, and compilation fails.
+
+```html
+<Card Title="Home" Link="/home"></Card>
+
 ```
 
-## Design Philosophy
+```text
+Error: Unused Prop "Link" passed to template "Card".
+ --> src/index.lm:14:14
 
-Lemon Markup extends HTML minimally.
+```
 
-It is:
+### 3. Circular References (Fatal Error)
 
-- not a replacement for HTML
-- not a JavaScript framework
-- not reactive
+Components cannot invoke themselves or form cyclic rendering chains (e.g., Template `A` calling Template `B`, which calls Template `A`). The compiler traces dependencies during parsing and aborts if an infinite loop is detected.
 
-It is:
+---
 
-- a static HTML reuse language
-- a compile-time templating system
-- a lightweight component compiler
+## Recommended Compiler Architecture
 
-The final browser output is always plain HTML.
+```text
+lexer/      # tokenizes tags, variables, text, and toggles state for <raw> blocks
+parser/     # builds AST; validates balanced tags and blocks
+registry/   # globally indexes template definitions; checks for naming collisions
+expander/   # handles strict validation (missing/unused props) and runs the AST swap
+generator/  # serializes the pure structural AST back into raw, beautiful HTML strings
+
+```
