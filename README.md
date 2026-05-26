@@ -1,12 +1,15 @@
 # Lemon Markup Compiler
 
-Lemon Markup is a strict, compile-time-only static HTML extension language.
+Lemon Markup is a simple, strict, compile-time-only static HTML extension language.
+
+**filename extension: .lm**
 
 <img src="lemon-logo.png" style="display:block;margin:0 auto;" alt="Lemon Logo" width="500" height="500">
 
 ## Overview
 
-This is a Go implementation of the Lemon Markup compiler that compiles `.lm` files to static HTML. It provides reusable components, strict prop validation, and compile-time error checking.
+The Lemon Markup compiler compiles `.lm` files to static HTML. It provides reusable components, strict prop validation, and compile-time error checking.
+The compiler is written in go.
 
 ## Features
 
@@ -17,6 +20,10 @@ This is a Go implementation of the Lemon Markup compiler that compiles `.lm` fil
 - **Strict Validation**: Circular reference detection, prop checking
 - **Void Elements**: Proper handling of HTML void elements (meta, link, img, etc.)
 - **Single-pass Compilation**: Fast, predictable compilation
+
+### What Lemon Markup Omits
+
+Lemon Markup intentionally omits reactivity, state management, client-side JavaScript execution, routing, scoped CSS, and hydration. It is strictly a static compiler for building **structural**, **reusable** HTML components.
 
 ## Installation
 
