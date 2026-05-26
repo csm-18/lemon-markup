@@ -1,0 +1,10 @@
+<template name="raw">
+  <div>reserved name</div>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <raw></raw>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <!-- This looks like an HTML comment but Lemon treats <!...> as text only if it contains DOCTYPE -->
+    <p>Text with <!-- not a real comment --> inside</p>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+<template name="Title">
+  <h1>{{ text }}</h1>
+</template>
+
+<template name="Card">
+  <div class="card">{{ children }}</div>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Title text="Multiple templates"></Title>
+    <Card>
+      <p>Inside card</p>
+    </Card>
+  </body>
+</html>

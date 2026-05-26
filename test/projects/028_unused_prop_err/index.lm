@@ -1,0 +1,11 @@
+<template name="Note">
+  <p>{{ text }}</p>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <!-- passing extra prop 'unused' should trigger an error -->
+    <Note text="hi" unused="nope"></Note>
+  </body>
+</html>

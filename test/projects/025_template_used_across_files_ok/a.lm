@@ -1,0 +1,3 @@
+<template name="Box">
+  <div class="box">{{ children }}</div>
+</template>

@@ -1,0 +1,10 @@
+<template name="card">
+  <div>lowercase template name</div>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <card></card>
+  </body>
+</html>

@@ -1,0 +1,3 @@
+<template name="Badge">
+  <span>First</span>
+</template>

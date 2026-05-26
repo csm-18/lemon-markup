@@ -1,0 +1,3 @@
+<template name="Only">
+  <p>This template exists but there's no doctype declaration in this project.</p>
+</template>

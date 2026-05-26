@@ -3,10 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"lemon/cmd"
 )
 
 func main() {
 	args := os.Args[1:]
 
-	fmt.Println(args)
+	if err := cmd.Execute(args); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }

@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <div>
+      <section>
+        <article>
+          <p>Nested content</p>
+        </article>
+      </section>
+    </div>
+  </body>
+</html>

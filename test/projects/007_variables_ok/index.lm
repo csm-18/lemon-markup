@@ -1,0 +1,10 @@
+<template name="Greeting">
+  <p>Hello, {{ name }}</p>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Greeting name="Alice"></Greeting>
+  </body>
+</html>

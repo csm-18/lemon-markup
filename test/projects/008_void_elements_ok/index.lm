@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <p>Line break below</p>
+    <br>
+    <img src="/img/logo.png">
+  </body>
+</html>

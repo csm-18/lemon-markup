@@ -1,0 +1,15 @@
+<template name="Card">
+  <div class="card">
+    <h2>{{ title }}</h2>
+    {{ children }}
+  </div>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Card title="Welcome">
+      <p>Card content</p>
+    </Card>
+  </body>
+</html>

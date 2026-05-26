@@ -1,0 +1,10 @@
+<template name="Badge">
+  <span>Second</span>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Badge></Badge>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+<template name="Inner">
+  <em>{{ label }}</em>
+</template>
+
+<template name="Outer">
+  <div><Inner label="in"></Inner></div>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Outer></Outer>
+  </body>
+</html>

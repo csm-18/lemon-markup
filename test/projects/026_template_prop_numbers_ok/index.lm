@@ -1,0 +1,10 @@
+<template name="Counter">
+  <span class="count">{{ n }}</span>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Counter n="42"></Counter>
+  </body>
+</html>

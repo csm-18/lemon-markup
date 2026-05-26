@@ -1,0 +1,10 @@
+<template name="B">
+  <A></A>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <A></A>
+  </body>
+</html>

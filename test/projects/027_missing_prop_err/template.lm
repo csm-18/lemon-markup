@@ -1,0 +1,11 @@
+<template name="Greet">
+  <p>Hi, {{ who }}</p>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <!-- missing required prop 'who' -->
+    <Greet></Greet>
+  </body>
+</html>

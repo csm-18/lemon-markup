@@ -1,0 +1,15 @@
+<template name="Wrapper">
+  <section>
+    {{ children }}
+  </section>
+</template>
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <Wrapper>
+      <p>One</p>
+      <p>Two</p>
+    </Wrapper>
+  </body>
+</html>
