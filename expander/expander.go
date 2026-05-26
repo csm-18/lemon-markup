@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"unicode"
 
-	"lemon/parser"
-	"lemon/registry"
+	"lemon-markup/parser"
+	"lemon-markup/registry"
 )
 
 type Expander struct {

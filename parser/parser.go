@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"lemon/lexer"
+	"lemon-markup/lexer"
 )
 
 var voidElements = map[string]bool{

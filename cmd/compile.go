@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"lemon/expander"
-	"lemon/generator"
-	"lemon/lexer"
-	"lemon/parser"
-	"lemon/registry"
+	"lemon-markup/expander"
+	"lemon-markup/generator"
+	"lemon-markup/lexer"
+	"lemon-markup/parser"
+	"lemon-markup/registry"
 )
 
 func Compile() error {

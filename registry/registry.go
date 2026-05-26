@@ -3,7 +3,7 @@ package registry
 import (
 	"fmt"
 
-	"lemon/parser"
+	"lemon-markup/parser"
 )
 
 type Registry struct {

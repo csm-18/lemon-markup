@@ -3,7 +3,7 @@ package generator
 import (
 	"strings"
 
-	"lemon/parser"
+	"lemon-markup/parser"
 )
 
 var voidElements = map[string]bool{

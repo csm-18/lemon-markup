@@ -21,7 +21,7 @@ This is a Go implementation of the Lemon Markup compiler that compiles `.lm` fil
 ## Installation
 
 ```bash
-go build -o lm .
+go build -o lm
 ```
 
 ## Usage
