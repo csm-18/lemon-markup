@@ -19,6 +19,7 @@ var voidElements = map[string]bool{
 	"area":   true,
 	"base":   true,
 	"embed":  true,
+	"param":  true,
 	"source": true,
 	"track":  true,
 	"wbr":    true,
