@@ -5,15 +5,15 @@ import (
 	"os"
 )
 
-const Version = "0.1.0"
+const Version = "0.1.1"
 
 func Execute(args []string) error {
 	if len(args) == 0 {
 		return Help()
 	}
-	
+
 	command := args[0]
-	
+
 	switch command {
 	case "init":
 		return Init()
