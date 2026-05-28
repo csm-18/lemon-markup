@@ -13,7 +13,7 @@ func main() {
 		fmt.Println(LEMON_ABOUT)
 	} else if len(args) == 1 {
 		if args[0] == "init" {
-
+			CreateLemonProject()
 		} else if args[0] == "build" {
 
 		} else if args[0] == "version" {
@@ -22,12 +22,10 @@ func main() {
 			fmt.Println(LEMON_HELP)
 
 		} else {
-			fmt.Println(LEMON_CLI_ERROR)
-			os.Exit(0)
+			PrintError(LEMON_CLI_ERROR)
 		}
 	} else {
-		fmt.Println(LEMON_CLI_ERROR)
-		os.Exit(0)
+		PrintError(LEMON_CLI_ERROR)
 	}
 
 }
@@ -43,4 +41,4 @@ const LEMON_HELP = `lemon Commands:
   3. lemon build              -> build the project
   4. lemon version            -> print lemon version
   5. lemon help               -> print lemon commands list`
-const LEMON_CLI_ERROR = "Error: Unknown command or malformed args passed to lemon!"
+const LEMON_CLI_ERROR = "Unknown command or malformed args passed to lemon!"
