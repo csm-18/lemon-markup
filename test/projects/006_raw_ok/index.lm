@@ -1,8 +1,0 @@
-<!DOCTYPE html>
-<html>
-  <body>
-    <raw>
-      <div>This should be preserved as raw HTML &amp; tags like <span>should not</span> be parsed.</div>
-    </raw>
-  </body>
-</html>

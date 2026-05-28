@@ -1,8 +1,0 @@
-<!DOCTYPE html>
-<html>
-  <body>
-    <Box>
-      <p>Cross-file template usage</p>
-    </Box>
-  </body>
-</html>

@@ -1,3 +1,3 @@
-module lemon-markup
+module lemon
 
 go 1.25.5
