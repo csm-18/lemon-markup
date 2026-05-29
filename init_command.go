@@ -12,8 +12,7 @@ func CreateLemonProject() {
 	CreateFile("LEMON_README.md", LEMON_README)
 	CreateFolder("logic")
 	CreateFolder("markup")
-	CreateFolder("pages")
-	CreateFile("./pages/index.lm", LEMON_HELLO_PAGE_TEMPLATE)
+	CreateFile("index.lm", LEMON_HELLO_PAGE_TEMPLATE)
 	CreateFolder("styles")
 
 	fmt.Println("Initialized new lemon project with:")
@@ -22,10 +21,10 @@ func CreateLemonProject() {
 	fmt.Println("  LEMON_README.md")
 	fmt.Println("  logic/")
 	fmt.Println("  markup/")
-	fmt.Println("  pages/index.lm")
+	fmt.Println("  index.lm")
 	fmt.Println("  styles/")
 	fmt.Println("")
-	fmt.Println("5 folders, 2 files")
+	fmt.Println("4 folders, 2 files")
 	fmt.Println()
 
 }
@@ -35,10 +34,10 @@ const LEMON_PROJECT_STRUCTURE = `Project Structure:
   LEMON_README.md
   logic/
   markup/
-  pages/index.lm
+  index.lm
   styles/
 
-5 folders, 2 files
+4 folders, 2 files
 `
 const LEMON_README = "This is a project created by " + LEMON_VERSION + "\n\n\n" +
 	LEMON_HELP + "\n\n\n" +
