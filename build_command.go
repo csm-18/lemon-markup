@@ -23,10 +23,21 @@ func BuildLemonProject() {
 	distDir := "dist"
 	CreateFolder(distDir)
 
-	// 3. Clean up leftover HTML files from previous runs
+	// 3. Synchronize static folders into dist/
+	if err := FolderSync("assets", filepath.Join(distDir, "assets")); err != nil {
+		PrintError("Unable to sync assets folder: " + err.Error())
+	}
+	if err := FolderSync("styles", filepath.Join(distDir, "styles")); err != nil {
+		PrintError("Unable to sync styles folder: " + err.Error())
+	}
+	if err := FolderSync("logic", filepath.Join(distDir, "logic")); err != nil {
+		PrintError("Unable to sync logic folder: " + err.Error())
+	}
+
+	// 4. Clean up leftover HTML files from previous runs
 	cleanupLeftoverHTML(distDir, markupFiles)
 
-	// 4. Step 1 Pass: Parse all discovered source streams to populate the Global Registry
+	// 5. Step 1 Pass: Parse all discovered source files and register templates globally
 	globalRegistry := NewRegistry()
 	documents := make(map[string]*Document)
 
@@ -53,7 +64,7 @@ func BuildLemonProject() {
 		globalRegistry.Register(doc, filePath)
 	}
 
-	// 5. Step 2 Pass: Unfold custom component layers and emit flat vanilla HTML structures
+	// 6. Step 2 Pass: Unfold custom component layers and emit flat vanilla HTML structures
 	outputCount := 0
 	cwd, _ := os.Getwd()
 	absCwd, _ := filepath.Abs(cwd)

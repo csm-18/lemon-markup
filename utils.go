@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
@@ -48,6 +49,125 @@ func CreateFolder(name string) {
 	if err != nil {
 		PrintError("Unable to create folder: " + name)
 	}
+}
+
+func CopyFolder(src, dst string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(dst, 0755)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := CopyFolder(srcPath, dstPath); err != nil {
+				return err
+			}
+			continue
+		}
+
+		data, err := os.ReadFile(srcPath)
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(dstPath, data, 0644); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func FolderSync(src, dst string) error {
+	if _, err := os.Stat(src); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	return syncFolder(src, dst)
+}
+
+func syncFolder(src, dst string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(dst, 0755)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := syncFolder(srcPath, dstPath); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := syncFile(srcPath, dstPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func syncFile(src, dst string) error {
+	if _, err := os.Stat(dst); err != nil {
+		if os.IsNotExist(err) {
+			return copyFile(src, dst)
+		}
+		return err
+	}
+
+	equal, err := filesAreEqual(src, dst)
+	if err != nil {
+		return err
+	}
+
+	if !equal {
+		return copyFile(src, dst)
+	}
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(dst, data, 0644)
+}
+
+func filesAreEqual(a, b string) (bool, error) {
+	aData, err := os.ReadFile(a)
+	if err != nil {
+		return false, err
+	}
+
+	bData, err := os.ReadFile(b)
+	if err != nil {
+		return false, err
+	}
+
+	return bytes.Equal(aData, bData), nil
 }
 
 // recursively find all ".lm" files starting from the given path, and ignore folders that are not necessary
