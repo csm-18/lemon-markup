@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 )
 
 func PrintError(message string) {
@@ -46,4 +48,44 @@ func CreateFolder(name string) {
 	if err != nil {
 		PrintError("Unable to create folder: " + name)
 	}
+}
+
+// recursively find all ".lm" files starting from the given path, and ignore folders that are not necessary
+func CollectAllMarkupFiles(rootPath string) ([]string, error) {
+	var files []string
+
+	// Define directories to completely ignore
+	ignoredDirs := map[string]bool{
+		"dist":   true,
+		"assets": true,
+		"styles": true,
+		"logic":  true,
+	}
+
+	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// If it's a directory and its name is in our ignore list, skip it entirely
+		if d.IsDir() {
+			if ignoredDirs[d.Name()] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Check if the file has the ".lm" extension
+		if filepath.Ext(d.Name()) == ".lm" {
+			files = append(files, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
 }

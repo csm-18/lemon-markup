@@ -15,7 +15,7 @@ func main() {
 		if args[0] == "init" {
 			CreateLemonProject()
 		} else if args[0] == "build" {
-
+			BuildLemonProject()
 		} else if args[0] == "version" {
 			fmt.Println(LEMON_VERSION)
 		} else if args[0] == "help" {
