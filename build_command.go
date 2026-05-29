@@ -8,6 +8,7 @@ import (
 )
 
 func BuildLemonProject() {
+	// 1. Discover all active source files using your specialized crawler
 	markupFiles, err := CollectAllMarkupFiles(".")
 	if err != nil {
 		PrintError("Unable to read markup files!")
@@ -18,7 +19,7 @@ func BuildLemonProject() {
 		return
 	}
 
-	// 2. Ensure the base target build directory exists
+	// 2. Ensure the base target build directory exists without wiping it
 	distDir := "dist"
 	CreateFolder(distDir)
 
@@ -55,6 +56,7 @@ func BuildLemonProject() {
 	// 5. Step 2 Pass: Unfold custom component layers and emit flat vanilla HTML structures
 	outputCount := 0
 	cwd, _ := os.Getwd()
+	absCwd, _ := filepath.Abs(cwd)
 
 	for filePath, doc := range documents {
 		// Run recursive components macro expansion algorithm pass
@@ -66,12 +68,21 @@ func BuildLemonProject() {
 			gen := NewGenerator()
 			html := gen.Generate(expandedDoc)
 
-			// Calculate mirrored destination sub-directory trees inside dist/
-			relPath, err := filepath.Rel(cwd, filePath)
+			// Safely convert to absolute path before checking relationship to avoid mixing rel/abs errors
+			absFilePath, _ := filepath.Abs(filePath)
+			relPath, err := filepath.Rel(absCwd, absFilePath)
 			if err != nil {
 				relPath = filePath
 			}
 			relPath = strings.TrimSuffix(relPath, ".lm")
+
+			// Strip the "markup/" directory prefix if present, so output maps cleanly into dist/ root
+			if strings.HasPrefix(relPath, "markup"+string(filepath.Separator)) {
+				relPath = strings.TrimPrefix(relPath, "markup"+string(filepath.Separator))
+			} else if strings.HasPrefix(relPath, "markup/") || strings.HasPrefix(relPath, "markup\\") {
+				relPath = relPath[7:]
+			}
+
 			outputPath := filepath.Join(distDir, relPath+".html")
 
 			// Create target layout directories dynamically if deeply nested
@@ -80,7 +91,7 @@ func BuildLemonProject() {
 				CreateFolder(outputFileDir)
 			}
 
-			// Save fully compiled template out to disk
+			// Save fully compiled template out to disk using your file builder helper
 			CreateFile(outputPath, html)
 
 			fmt.Printf("✓ Compiled: %s -> %s\n", filePath, outputPath)
@@ -93,16 +104,25 @@ func BuildLemonProject() {
 
 // Helper function to scan dist/ and safely remove HTML files whose source .lm file no longer exists
 func cleanupLeftoverHTML(distDir string, activeSources []string) {
-	// Create a quick lookup map of expected valid .html output paths
 	validHTMLOutputs := make(map[string]bool)
 	cwd, _ := os.Getwd()
+	absCwd, _ := filepath.Abs(cwd)
 
 	for _, srcPath := range activeSources {
-		relPath, err := filepath.Rel(cwd, srcPath)
+		absFilePath, _ := filepath.Abs(srcPath)
+		relPath, err := filepath.Rel(absCwd, absFilePath)
 		if err != nil {
 			relPath = srcPath
 		}
 		relPath = strings.TrimSuffix(relPath, ".lm")
+
+		// Apply the same structural prefix adjustment during cleanup matching passes
+		if strings.HasPrefix(relPath, "markup"+string(filepath.Separator)) {
+			relPath = strings.TrimPrefix(relPath, "markup"+string(filepath.Separator))
+		} else if strings.HasPrefix(relPath, "markup/") || strings.HasPrefix(relPath, "markup\\") {
+			relPath = relPath[7:]
+		}
+
 		expectedHTMLPath := filepath.Join(distDir, relPath+".html")
 		validHTMLOutputs[expectedHTMLPath] = true
 	}
@@ -110,7 +130,7 @@ func cleanupLeftoverHTML(distDir string, activeSources []string) {
 	// Walk through the dist directory to find and eliminate orphaned HTML files
 	err := filepath.Walk(distDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil // Skip path read errors safely
+			return nil
 		}
 
 		// We only care about checking individual files ending in .html
@@ -131,6 +151,6 @@ func cleanupLeftoverHTML(distDir string, activeSources []string) {
 }
 
 type File struct {
-	name string // Tracks the relative file path (e.g., "markup/ui/buttons.lm")
-	text string // Holds the raw string content of the file
+	name string
+	text string
 }

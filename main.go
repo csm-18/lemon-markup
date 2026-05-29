@@ -30,7 +30,7 @@ func main() {
 
 }
 
-const LEMON_VERSION = "lemon 0.2.0"
+const LEMON_VERSION = "lemon 0.2.1"
 const LEMON_ABOUT = `Lemon Markup is a simple, strict, compile-time-only static HTML extension language
 For help:
   lemon help`

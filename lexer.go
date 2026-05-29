@@ -71,50 +71,39 @@ func Lexer(srcFile File) []Token {
 
 	for x < len(text) {
 		if inRaw {
-			// ==========================================
-			// STATE 1: RAW SCOPE MODE (<raw>...</raw>)
-			// ==========================================
-			if x+5 < len(text) && text[x:x+6] == "</raw>" {
-				flushText() // Emit everything collected inside raw block up to this tag
-
-				tokens = append(tokens, Token{
-					Type:  TokenRawClose,
-					Value: "raw",
-					Line:  line,
-					Col:   col,
-				})
-				advance(6) // Skip past "</raw>"
+			// Inside raw text literal extraction zone, look strictly for closing structural segment
+			if strings.HasPrefix(text[x:], "</raw>") {
+				flushText()
+				tokens = append(tokens, Token{Type: TokenRawClose, Value: "</raw>", Line: line, Col: col})
+				advance(6)
 				inRaw = false
 			} else {
-				// Blindly capture character without processing logic
 				textBuf.WriteByte(text[x])
 				advance(1)
 			}
 		} else {
-			// ==========================================
-			// STATE 2: NORMAL HTML / COMPONENT MODE
-			// ==========================================
-
-			// 1. VARIABLE INTERPOLATION DETECTOR: {{ ... }}
-			if x+1 < len(text) && text[x] == '{' && text[x+1] == '{' {
+			// 1. DYNAMIC EXPRESSION TEMPLATE MARKERS ({{ Expression }})
+			if strings.HasPrefix(text[x:], "{{") {
 				flushText()
-				startLine, startCol := line, col
-				advance(2) // Skip "{{"
+				startLine := line
+				startCol := col
+				advance(2)
 
 				var varBuf strings.Builder
-				varClosed := false
+				foundEnd := false
+
 				for x < len(text) {
-					if x+1 < len(text) && text[x] == '}' && text[x+1] == '}' {
-						advance(2) // Skip "}}"
-						varClosed = true
+					if strings.HasPrefix(text[x:], "}}") {
+						foundEnd = true
+						advance(2)
 						break
 					}
 					varBuf.WriteByte(text[x])
 					advance(1)
 				}
 
-				if !varClosed {
-					fmt.Printf("Syntax Error: Unclosed variable interpolation block '}}'\n")
+				if !foundEnd {
+					fmt.Printf("Syntax Error: Missing ending variable delimiter '}}' wrapping layout token\n")
 					fmt.Printf("  --> %s:%d:%d\n", srcFile.name, startLine, startCol)
 					os.Exit(0)
 				}
@@ -128,197 +117,185 @@ func Lexer(srcFile File) []Token {
 				continue
 			}
 
-			// 2. TAG DETECTOR: <
+			// 2. MARKUP COMPONENT TAG STRUCT BOUNDARIES (<tag, </tag, <!DOCTYPE)
 			if text[x] == '<' {
-				// Look ahead to check if this is an actual tag sequence or just a raw '<' character
-				isTag := false
-				if x+1 < len(text) {
-					nextChar := text[x+1]
-					if nextChar == '/' || nextChar == '!' || unicode.IsLetter(rune(nextChar)) {
-						isTag = true
-					}
-				}
+				flushText()
+				startLine := line
+				startCol := col
 
-				if isTag {
-					flushText()
-					startLine, startCol := line, col
+				// Check for DOCTYPE declaration (case-insensitive check for <!doctype or <!DOCTYPE)
+				if x+9 <= len(text) && strings.ToLower(text[x:x+9]) == "<!doctype" {
+					var docTypeBuf strings.Builder
+					docTypeLine := line
+					docTypeCol := col
 
-					// Scenario A: DOCTYPE declaration handling
-					if x+14 < len(text) && strings.ToLower(text[x:x+15]) == "<!doctype html>" {
-						tokens = append(tokens, Token{
-							Type:  TokenDocTypeDecl,
-							Value: text[x : x+15],
-							Line:  startLine,
-							Col:   startCol,
-						})
-						advance(15)
-						continue
-					}
-
-					// Scenario B: Special raw-entry block tracker: <raw>
-					if x+4 < len(text) && text[x:x+5] == "<raw>" {
-						tokens = append(tokens, Token{
-							Type:  TokenRawOpen,
-							Value: "raw",
-							Line:  startLine,
-							Col:   startCol,
-						})
-						advance(5)
-						inRaw = true
-						continue
-					}
-
-					// Scenario C: Closing tag structural element: </TagName>
-					if x+1 < len(text) && text[x+1] == '/' {
-						tokens = append(tokens, Token{
-							Type:  TokenTagClose,
-							Value: "",
-							Line:  startLine,
-							Col:   startCol,
-						})
-						advance(2) // Skip "</"
-
-						// Isolate the element name string
-						var nameBuf strings.Builder
-						for x < len(text) && (unicode.IsLetter(rune(text[x])) || unicode.IsDigit(rune(text[x]))) {
-							nameBuf.WriteByte(text[x])
+					// Read until the matching closing '>' is found
+					foundEnd := false
+					for x < len(text) {
+						docTypeBuf.WriteByte(text[x])
+						if text[x] == '>' {
 							advance(1)
+							foundEnd = true
+							break
 						}
-
-						if nameBuf.Len() == 0 {
-							fmt.Printf("Syntax Error: Missing tag name after '</'\n")
-							fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
-							os.Exit(0)
-						}
-
-						tokens = append(tokens, Token{
-							Type:  TokenTagName,
-							Value: nameBuf.String(),
-							Line:  startLine,
-							Col:   startCol,
-						})
-
-						// Clear optional trailing whitespaces inside tag structure
-						for x < len(text) && (text[x] == ' ' || text[x] == '\t' || text[x] == '\n' || text[x] == '\r') {
-							advance(1)
-						}
-
-						if x < len(text) && text[x] == '>' {
-							advance(1)
-						} else {
-							fmt.Printf("Syntax Error: Expected closing '>' for tag closing declaration\n")
-							fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
-							os.Exit(0)
-						}
-						continue
-					}
-
-					// Scenario D: Regular Opening Tag Structure: <TagName attr="...">
-					tokens = append(tokens, Token{
-						Type:  TokenTagOpen,
-						Value: "",
-						Line:  startLine,
-						Col:   startCol,
-					})
-					advance(1) // Skip "<"
-
-					// Isolate Opening Tag Name
-					var nameBuf strings.Builder
-					for x < len(text) && (unicode.IsLetter(rune(text[x])) || unicode.IsDigit(rune(text[x]))) {
-						nameBuf.WriteByte(text[x])
 						advance(1)
 					}
 
-					if nameBuf.Len() == 0 {
-						fmt.Printf("Syntax Error: Expected valid tag name after '<'\n")
-						fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
+					if !foundEnd {
+						fmt.Printf("Syntax Error: Missing closing delimiter '>' for DOCTYPE definition\n")
+						fmt.Printf("  --> %s:%d:%d\n", srcFile.name, docTypeLine, docTypeCol)
 						os.Exit(0)
 					}
 
 					tokens = append(tokens, Token{
-						Type:  TokenTagName,
-						Value: nameBuf.String(),
-						Line:  startLine,
-						Col:   startCol,
+						Type:  TokenDocTypeDecl,
+						Value: docTypeBuf.String(),
+						Line:  docTypeLine,
+						Col:   docTypeCol,
 					})
+					continue
+				}
 
-					// Process loop for properties/attributes inside opening tag structure
+				// Check for raw literal escaping sections blocks
+				if strings.HasPrefix(text[x:], "<raw>") {
+					tokens = append(tokens, Token{Type: TokenRawOpen, Value: "<raw>", Line: line, Col: col})
+					advance(5)
+					inRaw = true
+					continue
+				}
+
+				// Check for traditional XML closing segment sequences
+				if x+1 < len(text) && text[x+1] == '/' {
+					tokens = append(tokens, Token{Type: TokenTagClose, Value: "</", Line: line, Col: col})
+					advance(2)
+
+					// Extract Tag name trailing marker content safely
+					var nameBuf strings.Builder
+					nameLine := line
+					nameCol := col
+					for x < len(text) && (unicode.IsLetter(rune(text[x])) || unicode.IsDigit(rune(text[x])) || text[x] == '-' || text[x] == '_') {
+						nameBuf.WriteByte(text[x])
+						advance(1)
+					}
+
+					if nameBuf.Len() > 0 {
+						tokens = append(tokens, Token{
+							Type:  TokenTagName,
+							Value: nameBuf.String(),
+							Line:  nameLine,
+							Col:   nameCol,
+						})
+					}
+
+					// Consume spaces until matching bracket closure is successfully reached
+					for x < len(text) && unicode.IsSpace(rune(text[x])) {
+						advance(1)
+					}
+
+					if x < len(text) && text[x] == '>' {
+						advance(1)
+					} else {
+						fmt.Printf("Syntax Error: Missing closing delimiter '>' for closing element layout definition\n")
+						fmt.Printf("  --> %s:%d:%d\n", srcFile.name, startLine, startCol)
+						os.Exit(0)
+					}
+					continue
+				} else {
+					// Fallthrough: Handle basic element tag open layer strings
+					tokens = append(tokens, Token{Type: TokenTagOpen, Value: "<", Line: line, Col: col})
+					advance(1)
+
+					// Extract element name identifier layer
+					var nameBuf strings.Builder
+					nameLine := line
+					nameCol := col
+					for x < len(text) && (unicode.IsLetter(rune(text[x])) || unicode.IsDigit(rune(text[x])) || text[x] == '-' || text[x] == '_') {
+						nameBuf.WriteByte(text[x])
+						advance(1)
+					}
+
+					if nameBuf.Len() > 0 {
+						tokens = append(tokens, Token{
+							Type:  TokenTagName,
+							Value: nameBuf.String(),
+							Line:  nameLine,
+							Col:   nameCol,
+						})
+					}
+
 					tagClosed := false
 					for x < len(text) {
-						// CRITICAL SPEC REQUIREMENT: Check for invalid self-closing sequences "/>"
-						if text[x] == '/' && x+1 < len(text) && text[x+1] == '>' {
-							fmt.Printf("Syntax Error: Self-closing tags standard '/>' are forbidden in Lemon Markup Spec v0.2.0\n")
-							fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
-							os.Exit(0)
+						// Strip interior spacer layout sequences safely
+						if unicode.IsSpace(rune(text[x])) {
+							advance(1)
+							continue
 						}
 
+						// Detect regular end bounds
 						if text[x] == '>' {
 							advance(1)
 							tagClosed = true
 							break
 						}
 
-						if text[x] == ' ' || text[x] == '\t' || text[x] == '\n' || text[x] == '\r' {
-							advance(1)
-							continue
+						// Support self-closing trailing forward slash bounds gracefully
+						if text[x] == '/' && x+1 < len(text) && text[x+1] == '>' {
+							advance(2)
+							tagClosed = true
+							break
 						}
 
-						// Extract attribute/prop key text strings
-						var attrNameBuf strings.Builder
-						attrLine, attrCol := line, col
-						for x < len(text) && (unicode.IsLetter(rune(text[x])) || unicode.IsDigit(rune(text[x])) || text[x] == '-' || text[x] == '_') {
-							attrNameBuf.WriteByte(text[x])
-							advance(1)
-						}
+						// Extract attribute key definitions safely
+						if unicode.IsLetter(rune(text[x])) || text[x] == '-' || text[x] == '_' {
+							attrLine := line
+							attrCol := col
+							var attrBuf strings.Builder
+							for x < len(text) && (unicode.IsLetter(rune(text[x])) || unicode.IsDigit(rune(text[x])) || text[x] == '-' || text[x] == '_' || text[x] == '.') {
+								attrBuf.WriteByte(text[x])
+								advance(1)
+							}
 
-						if attrNameBuf.Len() > 0 {
 							tokens = append(tokens, Token{
 								Type:  TokenAttrName,
-								Value: attrNameBuf.String(),
+								Value: attrBuf.String(),
 								Line:  attrLine,
 								Col:   attrCol,
 							})
 
-							// Skip whitespace trailing the attribute name
-							for x < len(text) && (text[x] == ' ' || text[x] == '\t' || text[x] == '\n' || text[x] == '\r') {
+							// Strip optional intervening layout whitespaces safely
+							for x < len(text) && unicode.IsSpace(rune(text[x])) {
 								advance(1)
 							}
 
-							// Handle assignment expressions
+							// Check if it's a valueless/boolean attribute or assignment
 							if x < len(text) && text[x] == '=' {
-								advance(1) // Skip "="
+								advance(1) // Consume '='
 
-								// Skip whitespace ahead of value quotes
-								for x < len(text) && (text[x] == ' ' || text[x] == '\t' || text[x] == '\n' || text[x] == '\r') {
+								// Strip optional post-assignment whitespaces safely
+								for x < len(text) && unicode.IsSpace(rune(text[x])) {
 									advance(1)
 								}
 
-								// Capture quoted values
 								if x < len(text) && (text[x] == '"' || text[x] == '\'') {
 									quoteType := text[x]
-									valLine, valCol := line, col
-									advance(1) // Skip opening quote
+									advance(1) // Skip quote opening character
 
 									var valBuf strings.Builder
-									valueClosed := false
+									valLine := line
+									valCol := col
+									foundQuoteEnd := false
+
 									for x < len(text) {
 										if text[x] == quoteType {
-											valueClosed = true
+											foundQuoteEnd = true
 											break
 										}
-										// Standard escape character logic inside property value declarations
-										if text[x] == '\\' && x+1 < len(text) && text[x+1] == quoteType {
-											advance(1)
-											valBuf.WriteByte(text[x])
-											advance(1)
-										} else {
-											valBuf.WriteByte(text[x])
-											advance(1)
-										}
+										valBuf.WriteByte(text[x])
+										advance(1)
 									}
 
-									if !valueClosed {
-										fmt.Printf("Syntax Error: Unterminated attribute value string context. Expected closing character (%c)\n", quoteType)
+									if !foundQuoteEnd {
+										fmt.Printf("Syntax Error: Missing closing quote character matching layout strings value definitions\n")
 										fmt.Printf("  --> %s:%d:%d\n", srcFile.name, valLine, valCol)
 										os.Exit(0)
 									}
@@ -329,16 +306,22 @@ func Lexer(srcFile File) []Token {
 										Line:  valLine,
 										Col:   valCol,
 									})
-
 									advance(1) // Skip closing quote
 								} else {
 									fmt.Printf("Syntax Error: Expected matching quote marks string literal wrapping attribute assignments\n")
 									fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
 									os.Exit(0)
 								}
+							} else {
+								// Valueless/boolean attribute detected: record an empty string token representation cleanly
+								tokens = append(tokens, Token{
+									Type:  TokenAttrValue,
+									Value: "",
+									Line:  attrLine,
+									Col:   attrCol,
+								})
 							}
 						} else {
-							// Found an unidentifiable garbage sequence inside the HTML tag block
 							fmt.Printf("Syntax Error: Unexpected symbol '%c' encountered within tag properties definition\n", text[x])
 							fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
 							os.Exit(0)
@@ -354,19 +337,18 @@ func Lexer(srcFile File) []Token {
 				}
 			}
 
-			// 3. FALLBACK CONTENT COLLECTOR (Normal Text and structural spaces)
+			// 3. FALLBACK CONTENT COLLECTOR
 			textBuf.WriteByte(text[x])
 			advance(1)
 		}
 	}
 
 	if inRaw {
-		fmt.Printf("Syntax Error: Unclosed literal target code segment wrapper block. Missing matching '</raw>'\n")
-		fmt.Printf("  --> %s:%d:%d\n", srcFile.name, line, col)
+		fmt.Printf("Syntax Error: Unclosed literal target code containment tag block sequence. Missing matching '</raw>'\n")
 		os.Exit(0)
 	}
 
 	flushText()
-	tokens = append(tokens, Token{Type: TokenEOF, Line: line, Col: col})
+	tokens = append(tokens, Token{Type: TokenEOF, Value: "", Line: line, Col: col})
 	return tokens
 }
