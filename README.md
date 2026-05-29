@@ -2,6 +2,8 @@
 
 Lemon Markup is a strict, compile-time-only static HTML extension language for building reusable markup components with zero client-side runtime.
 
+<img src="lemon-logo.png" alt="Lemon Logo" width="400" height="400">
+
 ## Overview
 
 Lemon Markup uses `.lm` files to compose HTML pages and reusable component templates. It compiles only at build time and emits plain HTML to `dist/`.
